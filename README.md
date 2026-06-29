@@ -31,6 +31,8 @@ npm run dev
 
 Vite покажет локальный адрес, обычно `http://localhost:5173`.
 
+Опубликованная версия: [Daily Growth Planner](https://abbosroziyevww-jpg.github.io/daily-growth-planner/).
+
 ## Production-сборка
 
 ```bash

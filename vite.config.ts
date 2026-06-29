@@ -2,7 +2,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const runtime = globalThis as typeof globalThis & { process?: { env?: Record<string, string | undefined> } }
+const appBase = runtime.process?.env?.GITHUB_ACTIONS ? '/daily-growth-planner/' : '/'
+
 export default defineConfig({
+  base: appBase,
   plugins: [
     react(),
     VitePWA({
@@ -16,26 +20,26 @@ export default defineConfig({
         'splash/apple-splash-1290-2796.png',
       ],
       manifest: {
-        id: '/',
+        id: appBase,
         name: 'Daily Growth Planner',
         short_name: 'Growth Planner',
         description: 'Личная система ежедневного развития видеографа',
         lang: 'ru',
-        start_url: '/',
-        scope: '/',
+        start_url: appBase,
+        scope: appBase,
         display: 'standalone',
         background_color: '#f5f5f3',
         theme_color: '#f5f5f3',
         categories: ['productivity', 'lifestyle', 'health'],
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: `${appBase}icons/icon-192.png`, sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: `${appBase}icons/icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: `${appBase}icons/icon-maskable-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,webmanifest}'],
-        navigateFallback: '/index.html',
+        navigateFallback: `${appBase}index.html`,
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,

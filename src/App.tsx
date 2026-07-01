@@ -62,6 +62,25 @@ const Icons = {
 const iconMap = Icons as Record<string, LucideIcon>
 const cn = (...values: Array<string | false | undefined>) => values.filter(Boolean).join(' ')
 
+const navigationItems = [
+  { id: 'plan', label: 'План дня', icon: 'LayoutDashboard' },
+  { id: 'learning', label: 'Сегодня учимся', icon: 'GraduationCap' },
+  { id: 'skills', label: 'Skill Tree', icon: 'GitBranch' },
+  { id: 'nutrition', label: 'Питание', icon: 'Utensils' },
+  { id: 'mass', label: 'Набор массы', icon: 'Dumbbell' },
+  { id: 'health', label: 'Здоровье', icon: 'HeartPulse' },
+  { id: 'blog', label: 'Блог', icon: 'Clapperboard' },
+  { id: 'portfolio', label: 'Портфолио', icon: 'BriefcaseBusiness' },
+  { id: 'networking', label: 'Нетворкинг', icon: 'Users' },
+  { id: 'anti-relapse', label: 'Анти-срыв', icon: 'ShieldCheck' },
+  { id: 'evening', label: 'Вечерний разбор', icon: 'MoonStar' },
+  { id: 'calendar', label: 'Календарь прогресса', icon: 'CalendarDays' },
+  { id: 'reminders', label: 'Напоминания', icon: 'Bell' },
+  { id: 'sync', label: 'Аккаунт и синхронизация', icon: 'Cloud', component: SyncSettings },
+  { id: 'backup', label: 'Данные и резервная копия', icon: 'Archive' },
+  { id: 'export', label: 'Экспорт', icon: 'Download' },
+] as const
+
 function formatLong(date: string) {
   return new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(`${date}T12:00:00`))
 }
@@ -237,7 +256,7 @@ function Export({ data }: { data: AppData }) {
 
 export default function App() {
   const [data, setData] = useState<AppData>(loadData)
-  const [active, setActive] = useState('План дня')
+  const [active, setActive] = useState('plan')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [selectedDate, setSelectedDate] = useState(todayISO())
   const [dark, setDark] = useState(() => { const saved=localStorage.getItem('dgp-theme'); return saved ? saved==='dark' : window.matchMedia('(prefers-color-scheme: dark)').matches })
@@ -352,29 +371,34 @@ export default function App() {
     return { ...prev, entries, healthEntries, eveningReviews: { ...prev.eveningReviews, [selectedDate]: nextReview } }
   })
   let content: ReactNode
-  if (active === 'План дня') content = <DailyPlanModule entry={entry} update={update}/>
-  else if (active === 'Сегодня учимся') content = <LearningModule date={selectedDate} onComplete={completeLearning}/>
-  else if (active === 'Skill Tree') content = <SkillTreeModule progress={data.skillProgress} onStatusChange={changeSkillStatus}/>
-  else if (active === 'Питание') content = <NutritionPlan entry={entry}/>
-  else if (active === 'Набор массы') content = <MassGainModule date={selectedDate} entries={data.healthEntries} sportToday={entry.sport} onChange={updateHealth}/>
-  else if (active === 'Здоровье') content = <HealthModule date={selectedDate} entries={data.healthEntries} onChange={updateHealth}/>
-  else if (active === 'Блог') content = <BlogModule date={selectedDate} published={data.publishedPosts} onPublish={publishPost}/>
-  else if (active === 'Портфолио') content = <PortfolioModule projects={data.portfolioProjects} onAdd={addPortfolioProject} onDelete={deletePortfolioProject}/>
-  else if (active === 'Нетворкинг') content = <NetworkingModule date={selectedDate} actions={data.networkingActions} onSend={addNetworkingAction}/>
-  else if (active === 'Анти-срыв') content = <AntiRelapseModule entry={entry} review={data.eveningReviews[selectedDate]} onChange={update}/>
-  else if (active === 'Вечерний разбор') content = <EveningReviewModule review={eveningReview} entry={entry} onReviewChange={updateEveningReview} onEntryChange={update}/>
-  else if (active === 'Календарь прогресса') content = <CalendarModule data={data}/>
-  else if (active === 'Напоминания') content = <RemindersModule settings={data.reminders} onChange={updateReminders}/>
-  else if (active === 'Аккаунт и синхронизация') content = <SyncModule status={syncStatus} lastSyncedAt={lastSyncedAt} message={syncMessage} onSync={runCloudSync}/>
-  else if (active === 'Данные и резервная копия') content = <DataBackupModule/>
-  else if (active === 'Экспорт') content = <ExportModule date={selectedDate} data={data}/>
-  else content = <GenericSection name={active} habits={data.habits} setHabit={setHabit}/>
+  if (active === 'plan') content = <DailyPlanModule entry={entry} update={update}/>
+  else if (active === 'learning') content = <LearningModule date={selectedDate} onComplete={completeLearning}/>
+  else if (active === 'skills') content = <SkillTreeModule progress={data.skillProgress} onStatusChange={changeSkillStatus}/>
+  else if (active === 'nutrition') content = <NutritionPlan entry={entry}/>
+  else if (active === 'mass') content = <MassGainModule date={selectedDate} entries={data.healthEntries} sportToday={entry.sport} onChange={updateHealth}/>
+  else if (active === 'health') content = <HealthModule date={selectedDate} entries={data.healthEntries} onChange={updateHealth}/>
+  else if (active === 'blog') content = <BlogModule date={selectedDate} published={data.publishedPosts} onPublish={publishPost}/>
+  else if (active === 'portfolio') content = <PortfolioModule projects={data.portfolioProjects} onAdd={addPortfolioProject} onDelete={deletePortfolioProject}/>
+  else if (active === 'networking') content = <NetworkingModule date={selectedDate} actions={data.networkingActions} onSend={addNetworkingAction}/>
+  else if (active === 'anti-relapse') content = <AntiRelapseModule entry={entry} review={data.eveningReviews[selectedDate]} onChange={update}/>
+  else if (active === 'evening') content = <EveningReviewModule review={eveningReview} entry={entry} onReviewChange={updateEveningReview} onEntryChange={update}/>
+  else if (active === 'calendar') content = <CalendarModule data={data}/>
+  else if (active === 'reminders') content = <RemindersModule settings={data.reminders} onChange={updateReminders}/>
+  else if (active === 'sync') content = <SyncModule status={syncStatus} lastSyncedAt={lastSyncedAt} message={syncMessage} onSync={runCloudSync}/>
+  else if (active === 'backup') content = <DataBackupModule/>
+  else if (active === 'export') content = <ExportModule date={selectedDate} data={data}/>
+  else content = null
   const dayProgress = Math.round([Boolean(entry.focus), Boolean(entry.work), entry.hours>0, entry.completed.length>0, Boolean(data.eveningReviews[selectedDate]?.completed)].filter(Boolean).length/5*100)
-  const navigate = (name: string) => { setActive(name); setMobileMenu(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const navigate = (value: string) => {
+    const item = navigationItems.find(route => route.id === value || route.label === value)
+    setActive(item?.id ?? value)
+    setMobileMenu(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
   return <div className="min-h-screen">
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-[#f5f5f3] p-4 dark:bg-[#0e0f0d] lg:flex lg:flex-col">
       <div className="flex items-center gap-3 px-2 py-4"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-zinc-900 text-white dark:bg-acid dark:text-zinc-900"><Icons.TrendingUp size={20}/></span><div><b className="block text-sm">Daily Growth</b><span className="text-[10px] font-bold uppercase tracking-[.17em] text-zinc-400">Planner</span></div></div>
-      <nav className="mt-4 flex-1 space-y-1 overflow-y-auto pr-1">{menu.map(([name, icon]) => { const Icon=iconMap[icon]; return <button key={name} onClick={()=>navigate(name)} className={cn('flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-[13px] font-semibold transition', active===name ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-white' : 'text-zinc-500 hover:bg-white/60 dark:hover:bg-zinc-900')}><Icon size={17}/>{name}</button>})}</nav>
+      <nav className="mt-4 flex-1 space-y-1 overflow-y-auto pr-1">{navigationItems.map(item => { const Icon=iconMap[item.icon]; return <button key={item.id} onClick={()=>navigate(item.id)} className={cn('flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-[13px] font-semibold transition', active===item.id ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-white' : 'text-zinc-500 hover:bg-white/60 dark:hover:bg-zinc-900')}><Icon size={17}/>{item.label}</button>})}</nav>
       <div className="mt-3 rounded-2xl bg-zinc-900 p-4 text-white dark:bg-zinc-800"><div className="flex items-center justify-between gap-2 text-xs font-bold"><span className="flex items-center gap-2"><Icons.Flame size={16} className="text-orange-400"/>Сегодня</span><span>{dayProgress}%</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-zinc-700"><div className="h-full rounded-full bg-acid transition-all" style={{width:`${dayProgress}%`}}/></div><p className="mt-2 text-[10px] text-zinc-400">{Object.keys(data.entries).length} дней с записями</p></div>
     </aside>
     <header className="safe-header sticky top-0 z-20 border-b bg-[#f5f5f3]/90 px-4 pb-3 backdrop-blur-xl dark:bg-[#0e0f0d]/90 lg:ml-64 lg:px-8"><div className="mx-auto flex max-w-6xl items-center justify-between"><button onClick={()=>navigate('План дня')} className="flex items-center gap-2 font-bold lg:hidden"><span className="grid h-9 w-9 place-items-center rounded-xl bg-zinc-900 text-white dark:bg-acid dark:text-zinc-900"><Icons.TrendingUp size={17}/></span>Daily Growth</button><div className="hidden items-center gap-3 text-sm text-zinc-500 lg:flex"><span>Собери день → укрепи систему</span><span className="flex items-center gap-1.5 text-[11px]"><i className={`h-2 w-2 rounded-full ${storageOk?'bg-emerald-500':'bg-red-500'}`}/>{storageOk?'Сохранено локально':'Ошибка сохранения'}</span></div><div className="flex items-center gap-2"><button className="icon-button" onClick={()=>setDark(!dark)} aria-label="Сменить тему">{dark?<Icons.Sun size={18}/>:<Icons.Moon size={18}/>}</button><div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-cobalt to-purple-500 text-xs font-bold text-white shadow-lg shadow-blue-500/20">ВГ</div></div></div></header>

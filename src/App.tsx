@@ -76,9 +76,9 @@ const navigationItems = [
   { id: 'evening', label: 'Вечерний разбор', icon: 'MoonStar' },
   { id: 'calendar', label: 'Календарь прогресса', icon: 'CalendarDays' },
   { id: 'reminders', label: 'Напоминания', icon: 'Bell' },
-  { id: 'sync', label: 'Аккаунт и синхронизация', icon: 'Cloud', component: SyncSettings },
   { id: 'backup', label: 'Данные и резервная копия', icon: 'Archive' },
   { id: 'export', label: 'Экспорт', icon: 'Download' },
+  { id: 'sync', label: 'Аккаунт и синхронизация', icon: 'Cloud', component: SyncSettings },
 ] as const
 
 function formatLong(date: string) {

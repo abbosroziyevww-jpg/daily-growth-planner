@@ -18,7 +18,7 @@ export const menu = [
   ['Питание', 'Utensils'], ['Набор массы', 'Dumbbell'], ['Здоровье', 'HeartPulse'],
   ['Блог', 'Clapperboard'], ['Портфолио', 'BriefcaseBusiness'], ['Нетворкинг', 'Users'],
   ['Анти-срыв', 'ShieldCheck'], ['Вечерний разбор', 'MoonStar'], ['Календарь прогресса', 'CalendarDays'],
-  ['Напоминания', 'Bell'], ['Данные и резервная копия', 'Archive'], ['Экспорт', 'Download'],
+  ['Напоминания', 'Bell'], ['Аккаунт и синхронизация', 'Cloud'], ['Данные и резервная копия', 'Archive'], ['Экспорт', 'Download'],
 ] as const
 
 export const schedule = [

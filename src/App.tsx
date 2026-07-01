@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
-  Archive, ArrowUpRight, Bell, BriefcaseBusiness, CalendarDays, Camera, Check, ChevronLeft,
+  Archive, ArrowUpRight, Bell, BriefcaseBusiness, CalendarDays, Camera, Check, ChevronLeft, Cloud,
   ChevronRight, Clapperboard, Download, Dumbbell, FileJson, Flame, GitBranch,
   GraduationCap, Handshake, HeartPulse, LayoutDashboard, Megaphone, Menu, Moon,
   MoonStar, Palette, Play, ShieldCheck, Sparkles, Sun, Target, TrendingUp, Users,
@@ -25,13 +25,14 @@ import { ProgressCalendar } from './components/ProgressCalendar'
 import { ExportPanel } from './components/ExportPanel'
 import { defaultReminders, ReminderSettings } from './components/ReminderSettings'
 import { DataBackup } from './components/DataBackup'
+import { SyncSettings } from './components/SyncSettings'
+import { isSupabaseConfigured, supabase } from './lib/supabase'
+import { markLocalChange, syncAppData, type SyncStatus, type SyncStrategy } from './utils/cloudSync'
 
 const STORAGE_KEY = 'daily-growth-planner-v1'
 const initialData: AppData = { entries: {}, weight: 58, habits: {}, skillProgress: {}, healthEntries: {}, publishedPosts: [], portfolioProjects: [], networkingActions: [], eveningReviews: {}, reminders: defaultReminders }
 
-function loadData(): AppData {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') as Partial<AppData>
+function normalizeData(parsed: Partial<AppData>): AppData {
     return {
       ...initialData, ...parsed,
       entries: parsed.entries ?? {}, habits: parsed.habits ?? {}, skillProgress: parsed.skillProgress ?? {}, healthEntries: parsed.healthEntries ?? {},
@@ -41,12 +42,18 @@ function loadData(): AppData {
       eveningReviews: parsed.eveningReviews ?? {},
       reminders: Array.isArray(parsed.reminders) && parsed.reminders.length ? parsed.reminders : defaultReminders,
     }
+}
+
+function loadData(): AppData {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') as Partial<AppData>
+    return normalizeData(parsed)
   }
   catch { return initialData }
 }
 
 const Icons = {
-  Archive, ArrowUpRight, Bell, BriefcaseBusiness, CalendarDays, Camera, Check, ChevronLeft,
+  Archive, ArrowUpRight, Bell, BriefcaseBusiness, CalendarDays, Camera, Check, ChevronLeft, Cloud,
   ChevronRight, Clapperboard, Download, Dumbbell, FileJson, Flame, GitBranch,
   GraduationCap, Handshake, HeartPulse, LayoutDashboard, Megaphone, Menu, Moon,
   MoonStar, Palette, Play, ShieldCheck, Sparkles, Sun, Target, TrendingUp, Users,
@@ -181,6 +188,7 @@ function CalendarModule({data}: {data:AppData}) { return <><SectionTitle eyebrow
 function ExportModule({date,data}:{date:string;data:AppData}) { return <><SectionTitle eyebrow="Твои данные" title="Экспорт" text="Скопируй план, отправь его в Telegram или сохрани текущий день, неделю и полную резервную копию."/><ExportPanel date={date} data={data}/></> }
 function RemindersModule({settings,onChange}:{settings:AppData['reminders'];onChange:(settings:AppData['reminders'])=>void}) { return <><SectionTitle eyebrow="Локально и спокойно" title="Напоминания" text="Настрой время и дни. Приложение покажет актуальную подсказку и подготовит весь график для копирования в Telegram."/><ReminderSettings settings={settings} onChange={onChange}/></> }
 function DataBackupModule() { return <><SectionTitle eyebrow="Mac ↔ iPhone" title="Данные и резервная копия" text="Скачивай все данные одним JSON-файлом, переноси их между устройствами и восстанавливай приложение без облачного аккаунта."/><DataBackup/></> }
+function SyncModule({status,lastSyncedAt,message,onSync}:{status:SyncStatus;lastSyncedAt:string|null;message:string|null;onSync:(strategy?:SyncStrategy)=>Promise<void>}) { return <><SectionTitle eyebrow="Mac ↔ iPhone" title="Аккаунт и синхронизация" text="Войди с одним email на обоих устройствах. Изменения остаются локально и автоматически отправляются в защищённое облако."/><SyncSettings status={status} lastSyncedAt={lastSyncedAt} message={message} onSync={onSync}/></> }
 
 function blankReview(date:string):EveningReviewEntry{return {date,didWell:'',didNotWork:'',whyNot:'',alcohol:false,craving:false,cravingReason:'',cigarettes:0,easierTomorrow:'',mainLesson:'',completed:false}}
 
@@ -234,9 +242,61 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(todayISO())
   const [dark, setDark] = useState(() => { const saved=localStorage.getItem('dgp-theme'); return saved ? saved==='dark' : window.matchMedia('(prefers-color-scheme: dark)').matches })
   const [storageOk, setStorageOk] = useState(true)
+  const dataRef = useRef(data)
+  const skipCloudMarkRef = useRef(false)
+  const syncTimerRef = useRef<number | null>(null)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(isSupabaseConfigured ? (navigator.onLine ? 'local' : 'offline') : 'not_configured')
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null)
+  const [syncMessage, setSyncMessage] = useState<string | null>(null)
   const entry = useMemo(() => data.entries[selectedDate] || blankEntry(selectedDate), [data.entries, selectedDate])
   const eveningReview = useMemo(() => data.eveningReviews[selectedDate] || blankReview(selectedDate), [data.eveningReviews, selectedDate])
-  useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); setStorageOk(true) } catch { setStorageOk(false) } }, [data])
+  const runCloudSync = useCallback(async (strategy: SyncStrategy = 'auto') => {
+    setSyncStatus(isSupabaseConfigured ? (navigator.onLine ? 'syncing' : 'offline') : 'not_configured')
+    setSyncMessage(null)
+    const result = await syncAppData(dataRef.current, strategy)
+    setSyncStatus(result.status)
+    setSyncMessage(result.message ?? null)
+    if (result.syncedAt) setLastSyncedAt(result.syncedAt)
+    if (result.data) {
+      const nextData = normalizeData(result.data)
+      skipCloudMarkRef.current = true
+      dataRef.current = nextData
+      setData(nextData)
+    }
+  }, [])
+  useEffect(() => {
+    dataRef.current = data
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); setStorageOk(true) } catch { setStorageOk(false); return }
+    if (skipCloudMarkRef.current) { skipCloudMarkRef.current = false; return }
+    if (!isSupabaseConfigured) { setSyncStatus('not_configured'); return }
+    markLocalChange()
+    setSyncStatus(current => current === 'conflict' ? current : (navigator.onLine ? 'local' : 'offline'))
+    if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current)
+    syncTimerRef.current = window.setTimeout(() => void runCloudSync(), 1800)
+    return () => { if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current) }
+  }, [data, runCloudSync])
+  useEffect(() => {
+    if (!supabase) return
+    void supabase.auth.getSession().then(({ data: auth }) => auth.session ? void runCloudSync() : setSyncStatus('signed_out'))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) { setSyncStatus('signed_out'); return }
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') window.setTimeout(() => void runCloudSync(), 0)
+    })
+    const handleOnline = () => void runCloudSync()
+    const handleOffline = () => setSyncStatus('offline')
+    const handleVisibility = () => { if (document.visibilityState === 'visible' && navigator.onLine) void runCloudSync() }
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    document.addEventListener('visibilitychange', handleVisibility)
+    const interval = window.setInterval(() => { if (navigator.onLine) void runCloudSync() }, 60_000)
+    return () => {
+      subscription.unsubscribe()
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.clearInterval(interval)
+    }
+  }, [runCloudSync])
   useEffect(() => { document.documentElement.classList.toggle('dark', dark); localStorage.setItem('dgp-theme', dark ? 'dark' : 'light'); document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0e0f0d' : '#f5f5f3') }, [dark])
   const update = (patch: Partial<DayEntry>) => {
     if (patch.date && patch.date !== selectedDate) { setSelectedDate(patch.date); return }
@@ -305,6 +365,7 @@ export default function App() {
   else if (active === 'Вечерний разбор') content = <EveningReviewModule review={eveningReview} entry={entry} onReviewChange={updateEveningReview} onEntryChange={update}/>
   else if (active === 'Календарь прогресса') content = <CalendarModule data={data}/>
   else if (active === 'Напоминания') content = <RemindersModule settings={data.reminders} onChange={updateReminders}/>
+  else if (active === 'Аккаунт и синхронизация') content = <SyncModule status={syncStatus} lastSyncedAt={lastSyncedAt} message={syncMessage} onSync={runCloudSync}/>
   else if (active === 'Данные и резервная копия') content = <DataBackupModule/>
   else if (active === 'Экспорт') content = <ExportModule date={selectedDate} data={data}/>
   else content = <GenericSection name={active} habits={data.habits} setHabit={setHabit}/>

@@ -23,6 +23,7 @@ export class StorageBackupError extends Error {
 }
 
 function isAppStorageKey(key: string) {
+  if (key === 'dgp-cloud-sync-meta-v1' || key === 'dgp-cloud-device-id-v1' || key.startsWith('sb-')) return false
   return key === MAIN_STORAGE_KEY || key === 'dgp-theme' || key.startsWith('daily-growth-planner-') || key.startsWith('dgp-')
 }
 

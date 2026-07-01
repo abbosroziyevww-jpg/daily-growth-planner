@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  ArrowUpRight, Bell, BriefcaseBusiness, CalendarDays, Camera, Check, ChevronLeft,
+  Archive, ArrowUpRight, Bell, BriefcaseBusiness, CalendarDays, Camera, Check, ChevronLeft,
   ChevronRight, Clapperboard, Download, Dumbbell, FileJson, Flame, GitBranch,
   GraduationCap, Handshake, HeartPulse, LayoutDashboard, Megaphone, Menu, Moon,
   MoonStar, Palette, Play, ShieldCheck, Sparkles, Sun, Target, TrendingUp, Users,
@@ -24,6 +24,7 @@ import { EveningReview } from './components/EveningReview'
 import { ProgressCalendar } from './components/ProgressCalendar'
 import { ExportPanel } from './components/ExportPanel'
 import { defaultReminders, ReminderSettings } from './components/ReminderSettings'
+import { DataBackup } from './components/DataBackup'
 
 const STORAGE_KEY = 'daily-growth-planner-v1'
 const initialData: AppData = { entries: {}, weight: 58, habits: {}, skillProgress: {}, healthEntries: {}, publishedPosts: [], portfolioProjects: [], networkingActions: [], eveningReviews: {}, reminders: defaultReminders }
@@ -45,7 +46,7 @@ function loadData(): AppData {
 }
 
 const Icons = {
-  ArrowUpRight, Bell, BriefcaseBusiness, CalendarDays, Camera, Check, ChevronLeft,
+  Archive, ArrowUpRight, Bell, BriefcaseBusiness, CalendarDays, Camera, Check, ChevronLeft,
   ChevronRight, Clapperboard, Download, Dumbbell, FileJson, Flame, GitBranch,
   GraduationCap, Handshake, HeartPulse, LayoutDashboard, Megaphone, Menu, Moon,
   MoonStar, Palette, Play, ShieldCheck, Sparkles, Sun, Target, TrendingUp, Users,
@@ -179,6 +180,7 @@ function EveningReviewModule({ review, entry, onReviewChange, onEntryChange }: {
 function CalendarModule({data}: {data:AppData}) { return <><SectionTitle eyebrow="Пять опор" title="Календарь прогресса" text="Зелёный — минимум дня собран. Жёлтый — сделана часть. Красный — срыв или день остался без опор."/><ProgressCalendar entries={data.entries} healthEntries={data.healthEntries} reviews={data.eveningReviews} skillProgress={data.skillProgress}/></> }
 function ExportModule({date,data}:{date:string;data:AppData}) { return <><SectionTitle eyebrow="Твои данные" title="Экспорт" text="Скопируй план, отправь его в Telegram или сохрани текущий день, неделю и полную резервную копию."/><ExportPanel date={date} data={data}/></> }
 function RemindersModule({settings,onChange}:{settings:AppData['reminders'];onChange:(settings:AppData['reminders'])=>void}) { return <><SectionTitle eyebrow="Локально и спокойно" title="Напоминания" text="Настрой время и дни. Приложение покажет актуальную подсказку и подготовит весь график для копирования в Telegram."/><ReminderSettings settings={settings} onChange={onChange}/></> }
+function DataBackupModule() { return <><SectionTitle eyebrow="Mac ↔ iPhone" title="Данные и резервная копия" text="Скачивай все данные одним JSON-файлом, переноси их между устройствами и восстанавливай приложение без облачного аккаунта."/><DataBackup/></> }
 
 function blankReview(date:string):EveningReviewEntry{return {date,didWell:'',didNotWork:'',whyNot:'',alcohol:false,craving:false,cravingReason:'',cigarettes:0,easierTomorrow:'',mainLesson:'',completed:false}}
 
@@ -303,6 +305,7 @@ export default function App() {
   else if (active === 'Вечерний разбор') content = <EveningReviewModule review={eveningReview} entry={entry} onReviewChange={updateEveningReview} onEntryChange={update}/>
   else if (active === 'Календарь прогресса') content = <CalendarModule data={data}/>
   else if (active === 'Напоминания') content = <RemindersModule settings={data.reminders} onChange={updateReminders}/>
+  else if (active === 'Данные и резервная копия') content = <DataBackupModule/>
   else if (active === 'Экспорт') content = <ExportModule date={selectedDate} data={data}/>
   else content = <GenericSection name={active} habits={data.habits} setHabit={setHabit}/>
   const dayProgress = Math.round([Boolean(entry.focus), Boolean(entry.work), entry.hours>0, entry.completed.length>0, Boolean(data.eveningReviews[selectedDate]?.completed)].filter(Boolean).length/5*100)
